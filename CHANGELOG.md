@@ -1,0 +1,15 @@
+# Change Log
+All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
+
+## [0.1.2] - 2018-05-09
+## Added
+- `<<-` to complement `<-` in the context of forms threading in the style
+  of `->>`.
+
+## [0.1.1] - 2018-05-06
+### Added
+- `if-not->` & `if-not->>`.
+- `when-not->` & `when-not->>`.
+
+## [0.1.0] - 2018-04-30
+Initial release
