@@ -159,10 +159,27 @@ The challenge lying in defining both the `->` and `->>` variants, observe the ac
    ->> "Threads like `->>`."]
   [expr & forms]
   `(let [result# ~expr]
-     (~&threading-variant result# ~@forms) ;; &threading-variant here is
-     result#))                             ;; successively '-> then '->>
+     (~&threading-variant result# ~@forms) ;; &threading-variant is bound
+     result#))                             ;; to '-> then '->>
 ```
 
+## Why use `threading` ?
+
+#### Readability
+
+Compare:
+```clojure
+(let [selection (fetch resource opts)]
+  (if (contains? opts :first)
+    (first selection)
+    selection)))
+```
+
+vs:
+```clojure
+(-> (fetch resource opts)
+    (if-> (contains? :first) first))
+```
 
 ## TODO
 
