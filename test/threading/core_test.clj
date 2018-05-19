@@ -69,6 +69,10 @@
   (is (true?  (or->  1 number? (> 0))))
   (is (true? (or->> 1 number? (> 0)))))
 
+(deftest test-map->
+  (is [3 3 3]    (map-> (repeat 3 1) inc inc))
+  (is [-1 -1 -1] (map-> (repeat 3 1) -)))
+
 (deftest test-<-
   (is (= 124 (-> :x
                  (<- 123)

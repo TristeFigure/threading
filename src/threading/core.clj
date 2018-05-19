@@ -1,8 +1,8 @@
 (ns threading.core
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [shuriken.core :refer [conform! adjust truncate lines format-code
-                                   debug-print]]))
+            [shuriken.core :refer [conform! adjust truncate lines join-lines
+                                   format-code debug-print]]))
 
 (s/def ::macro-variants
   (s/and vector?
@@ -18,22 +18,78 @@
     :variants    ::macro-variants
     :bodies      :shuriken.spec/args+bodies))
 
-(declare &macro-variant &macro-opts)
-
 ;; TODO: document
-(defmacro defthreading [& args]
-  (let [{:keys [name-prefix doc-prefix variants args bodies]}
+(defmacro ^{:arglists [[name-prefix? doc-prefix? [(variant docstring? opts?)+]
+                        [params*] body]
+                       [name-prefix? doc-prefix? [(variant docstring? opts?)+]
+                        ([params*] prepost-map? body)+]]}
+  defthreading
+  "Defines a threading arrow with variants.
+
+  Each variant is defined by a sequence like `(name docstring? opts?)`.
+
+  The name of each defined threading arrow will consist in the
+  variant symbol (usually `->` and `->>`) prefixed by `name-prefix`
+  if provided.
+  Same goes for each arrow docstring: it will be prefixed with
+  `doc-prefix` if provided.
+
+  The `body` will have access to some local variables defined under
+  the hood:
+
+  - `&threading-variant` (mapped to the variant's name)
+  - `&threading-opts`    (mapped to the variant's opts map if provided)
+
+  Keep in mind `defthreading` defines macros: the body should
+  return Clojure code, not runtime values.
+
+
+  Example:
+
+  Consider this definition of [[tap]] with a custom `->debug`
+  threading variant:
+  ```clojure
+
+  (defmacro ->debug [& forms]
+    `(-> ~@forms))
+
+  (defthreading tap
+    \"Some documentation.\"
+    [-> \"Some sufix for the documentation.\"
+     ->> \"Another documentation complement\"
+     ->debug {:debug true}] ;; No documentation here
+    [expr & forms]
+    `(let [result# ~expr]
+       (when (:debug ~&threading-opts)
+         (println \"debug->:\" result#))
+       (~&threading-variant result# ~@forms)
+       result#))
+
+  (tap->debug 1 (println \": perform some side-effect\"))
+  ;; debug->: 1
+  ;; 1 : perform some side-effect.
+  ;; => 1
+  ```
+  "
+  [& args]
+  (let [{:keys [name-prefix doc-prefix variants bodies]}
         (conform! ::defthreading-args args)]
     (cons 'do (for [{:keys [macro docstring opts]} variants
                     :let [specific-name (symbol (str name-prefix macro))
-                          specific-doc (if (or doc-prefix docstring)
-                                         (clojure.string/trim
-                                           (str doc-prefix \newline docstring)))
+                          specific-doc
+                          (if (or doc-prefix docstring)
+                            (clojure.string/trim
+                              (str doc-prefix \newline
+                                   (->> docstring
+                                        lines
+                                        (map #(-> (str/replace % #"^\s+" "")
+                                                  (->> (str "  "))))
+                                        join-lines))))
                           bodies (map (fn [{:keys [body] :as plan}]
                                         (->> body)
                                         (assoc plan :body
-                                          `((let [~'&macro-variant '~macro
-                                                  ~'&macro-opts '~opts]
+                                          `((let [~'&threading-variant '~macro
+                                                  ~'&threading-opts '~opts]
                                               ~@body))))
                                       bodies)]]
                 (do (->> {:def-macro  'defmacro
@@ -46,13 +102,13 @@
                          (s/unform :shuriken.spec/macro-definition)))))))
 
 (defthreading tap
-  "Threads the expr through the forms like -> and returns the value of
+  "Threads the expr through the forms then returns the value of
   the initial expr."
-  [->
-   ->> "Like tap-> but threads with ->>."]
-  [x & forms]
-  `(let [result# ~x]
-     (~&macro-variant result# ~@forms)
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [result# ~expr]
+     (~&threading-variant result# ~@forms)
      result#))
 
 (defmacro tap
@@ -65,142 +121,151 @@
   ; yo
   ; 124
   ; => 123"
-  [x & body]
+  [expr & body]
   (let [result-sym (gensym "result-")]
-    `(let [~result-sym ~x]
-       ~@(map (fn [expr]
-                (if (some->> expr first str (re-matches #"^.*->>?$"))
-                  `(-> ~result-sym ~expr)
-                  expr))
+    `(let [~result-sym ~expr]
+       ~@(map (fn [x]
+                (if (some->> x first str (re-matches #"^.*->>?$"))
+                  `(-> ~result-sym ~x)
+                  x))
               body)
        ~result-sym)))
 
-(defmacro literally [expr]
+(defmacro ^:no-doc literally [expr]
   `(let [expr# '~expr
          value# ~expr]
      [(= (str expr#) (str value#))
       value#]))
 
-(defn pp->log* [variant max-label-length label result]
+(defn ^:no-doc pp->log* [variant max-label-length label result]
   (let []
     (debug-print
       (adjust :left max-label-length label)
       result)))
 
 (defthreading pp
-  [->  "Like ->, but prints a debug statement for f and each expr in forms."
-   ->> "Like ->>, but prints a debug statement for f and each expr in forms."]
+  [->  "Like `->`, but prints a debug statement for `f` and each expr in `forms`."
+   ->> "Like `->>`, but prints a debug statement for `f` and each expr in `forms`."]
   [f & forms]
   (let [max-expr-length (->> forms
                              (map #(->> % format-code lines first
-                                        (str &macro-variant " ") count))
+                                        (str &threading-variant " ") count))
                              (apply max))
         log-sym (gensym "log")
-        padding (apply str (-> &macro-variant (str " ") count (repeat " ")))]
+        padding (apply str (-> &threading-variant (str " ") count (repeat " ")))]
     `(let [[literal?# result-f#] (literally ~f)
-           label-f# (str ~(str &macro-variant)
+           label-f# (str ~(str &threading-variant)
                          (when-not literal?# (str " " '~f)))
            max-label-length# (max ~max-expr-length
                                   (min (count label-f#)
                                        24))
            ~log-sym (partial pp->log*
-                             ~(str &macro-variant)
+                             ~(str &threading-variant)
                              max-label-length#)]
        (~log-sym (truncate label-f# max-label-length#)
                  result-f#)
-       (~&macro-variant result-f#
+       (~&threading-variant result-f#
                         ~@(map (fn [expr]
                                  `((fn [x#]
-                                     (let [result# (~&macro-variant x# ~expr)]
+                                     (let [result# (~&threading-variant x# ~expr)]
                                        (~log-sym ~(str padding expr) result#)
                                        result#))))
                                forms)))))
 
 (defthreading if
-  "Threads `value` through `test` then `then` or `else`. If `else` is
-  not provided, returns `value` when `test` fails."
-  [->
-   ->> "Like [[if->]], but with `->>` threading style."]
-  ([value test then]
-   `(~(symbol (str 'if &macro-variant))
-     ~value ~test ~then identity))
-  ([value test then else]
-   `(let [e# ~value]
-      (if (~&macro-variant e# ~test)
-        (~&macro-variant e# ~then)
-        (~&macro-variant e# ~else)))))
+  "Threads `expr` through `test` then `then` or `else`. If `else` is
+  not provided, returns `expr` when `test` fails."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  ([expr test then]
+   `(~(symbol (str 'if &threading-variant))
+     ~expr ~test ~then identity))
+  ([expr test then else]
+   `(let [e# ~expr]
+      (if (~&threading-variant e# ~test)
+        (~&threading-variant e# ~then)
+        (~&threading-variant e# ~else)))))
 
 (defthreading if-not
-  "Threads `value` through `test` then `then` or `else`. If `else` is
-  not provided, returns `value` when `test` fails."
-  [->
-   ->> "Like [[if-not->]], but with `->>` threading style."]
-  ([value test then]
-   `(~(symbol (str 'if-not &macro-variant))
-     ~value ~test ~then identity))
-  ([value test then else]
-   `(let [e# ~value]
-      (if-not (~&macro-variant e# ~test)
-        (~&macro-variant e# ~then)
-        (~&macro-variant e# ~else)))))
+  "Threads `expr` through `test` then `then` or `else`. If `else` is
+  not provided, returns `expr` when `test` fails."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  ([expr test then]
+   `(~(symbol (str 'if-not &threading-variant))
+     ~expr ~test ~then identity))
+  ([expr test then else]
+   `(let [e# ~expr]
+      (if-not (~&threading-variant e# ~test)
+        (~&threading-variant e# ~then)
+        (~&threading-variant e# ~else)))))
 
 (defthreading when
-  "Threads `value` through `test` then the rest of the exprs if it succeeds.
-  Returns `value` otherwise."
-  [->
-   ->> "Like [[when->]], but with `->>` threading style."]
-  [value test & exprs]
-  `(let [e# ~value]
-     (if (~&macro-variant e# ~test)
-       (~&macro-variant e# ~@exprs)
+  "Threads `expr` through `test` then the rest of the `forms` if it succeeds.
+  Returns `expr` otherwise."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr test & forms]
+  `(let [e# ~expr]
+     (if (~&threading-variant e# ~test)
+       (~&threading-variant e# ~@forms)
        e#)))
 
 (defthreading when-not
-  "Threads `value` through `test` then the rest of the exprs if it fails.
-  Returns `value` otherwise."
-  [->
-   ->> "Like [[when-not->]], but with `->>` threading style."]
-  [value test & exprs]
-  `(let [e# ~value]
-     (if-not (~&macro-variant e# ~test)
-       (~&macro-variant e# ~@exprs)
+  "Threads `expr` through `test` then the rest of the `forms` if it fails.
+  Returns `expr` otherwise."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr test & forms]
+  `(let [e# ~expr]
+     (if-not (~&threading-variant e# ~test)
+       (~&threading-variant e# ~@forms)
        e#)))
 
 (defthreading and
-  "Threads `value` through each expr halting on a `nil` or `false` result."
-  [->
-   ->> "Like [[and->]], but with `->>` threading style."]
-  [value & exprs]
+  "Threads `expr` through each form halting on a `nil` or `false` result."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
   (let [v-sym (gensym "v-")]
-    `(let [~v-sym ~value]
+    `(let [~v-sym ~expr]
        (and ~@(map (fn [e]
-                     `(~&macro-variant ~v-sym ~e))
-                   exprs)))))
+                     `(~&threading-variant ~v-sym ~e))
+                   forms)))))
 
 (defthreading or
-  "Threads `value` through each expr halting on a non `nil` or `false` result."
-  [->
-   ->> "Like [[or->]], but with `->>` threading style."]
-  [value & exprs]
+  "Threads `expr` through each expr halting on a non `nil` or `false` result."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
   (let [v-sym (gensym "v-")]
-    `(let [~v-sym ~value]
+    `(let [~v-sym ~expr]
        (or ~@(map (fn [e]
-                     `(~&macro-variant ~v-sym ~e))
-                   exprs)))))
+                     `(~&threading-variant ~v-sym ~e))
+                   forms)))))
 
+(defthreading map
+  "For an `expr` that will yield a sequence, threads each of its values
+  through the `forms`."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [expr# ~expr]
+     (map (fn [f#]
+            (~&threading-variant f# ~@forms))
+          expr#)))
 
-(defmacro <-
-  "Used to provide arbitrary input and output values to forms threading in the
-  style of `->`.
-  The threaded form will be evaluated although its value will be
-  discarded."
+(defthreading
+  [<-
+   "Used to provide arbitrary input and output values to forms threading in the
+   style of `->`.
+   The threaded form will be evaluated although its value will be
+   discarded."
+
+   <<-
+   "Like [[<-]] but must be used in the context of a form threading in the
+   style of `->>`."]
   [& body]
-  `(do ~@body))
-
-(defmacro <<-
-  "Used to provide arbitrary input and output values to forms threading in the
-  style of `->>`.
-  The threaded form will be evaluated although its value will be
-  discarded."
-  [& body]
-  `(do ~(last body) ~@(butlast body)))
+  (case &threading-variant
+    <-  `(do ~@body)
+    <<- `(do ~(last body) ~@(butlast body))))
