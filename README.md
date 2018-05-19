@@ -17,6 +17,8 @@ then in a namespace
   (:require [threading.core :refer :all]))
 ```
 
+## [API doc](https://tristefigure.github.io/threading/index.html)
+
 ## Arrows
 
 **All of the arrows below come with both a `->` variant and a `->>` variant.**
@@ -168,7 +170,7 @@ The challenge lying in defining both the `->` and `->>` variants, observe the ac
 
 ## TODO
 
--  `cond->`, maybe `merge->`, etc... Contributions are welcomed if they are driven by *an impluse*.
+-  `cond->`, maybe `merge->`, etc... Contributions are welcome if they are driven by *an impluse*.
 -  `pp->` is bit weird at times.
 
 
