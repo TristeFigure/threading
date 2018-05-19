@@ -4,13 +4,9 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 
 ## Usage
 
-Adapt your `project.clj` dependencies to include
-
 ```clojure
 [threading "0.1.3"]
 ```
-
-then in a namespace
 
 ```clojure
 (ns my-ns
@@ -77,9 +73,9 @@ Consider:
 (and-> "abc" string? vector)
 ;; => ["abc"]
 
-(and 123 (string? 123) (vector 123))
+(and 123 (string? 123) (println 123))
 ;; => false
-(and-> 123 string? vector)
+(and-> 123 string? println)
 ;; => false
 ```
 
@@ -96,10 +92,10 @@ Consider:
 In Clojure, this gives:
 ```clojure
 (-> 123
-    (tap-> (println ": the initial value"))
+    (tap-> (println "-> the initial value"))
     inc
     (tap->> (println "New value is :")))
-;; 123 : the initial value
+;; 123 -> the initial value
 ;; New value is: 124
 ;; => 124
 ```
@@ -171,7 +167,7 @@ The challenge lying in defining both the `->` and `->>` variants, observe the ac
 ## TODO
 
 -  `cond->`, maybe `merge->`, etc... Contributions are welcome if they are driven by *an impluse*.
--  `pp->` is bit weird at times.
+-  `pp->` is a bit weird at times.
 
 
 
