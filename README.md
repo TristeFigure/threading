@@ -7,7 +7,7 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 Adapt your `project.clj` dependencies to include
 
 ```clojure
-[threading "0.1.2"]
+[threading "0.1.3"]
 ```
 
 then in a namespace

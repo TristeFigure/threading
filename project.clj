@@ -1,4 +1,4 @@
-(defproject threading "0.1.2"
+(defproject threading "0.1.3"
   :description "A threading macro library as sobber as its name"
   :url "https://github.com/TristeFigure/threading"
   :license {:name "Eclipse Public License"

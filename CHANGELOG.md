@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.1.3] - 2018-05-19
+- `map->` and `map->>`
+- README + Documentation + API doc
+
 ## [0.1.2] - 2018-05-09
 ## Added
 - `<<-` to complement `<-` in the context of forms threading in the style
