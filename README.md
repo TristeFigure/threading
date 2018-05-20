@@ -2,6 +2,16 @@
 
 A Clojure library that provides a small set of threading arrows, the kind of arrows you need on an impulse.
 
+<p align="center">
+  <img src="http://pilavakis.net/images/new_pa22.gif">
+</p>
+
+<p align="center">
+  <i>
+    Penelope now appears before the suitors in her glittering veil. In her hand is a stout bow left behind by Odysseus when he sailed for Troy. "Whoever strings this bow," she says, "and sends an arrow straight through the sockets of twelve ax heads lined in a row -- that man will I marry."
+  </i>
+</p>
+
 ## Usage
 
 ```clojure
