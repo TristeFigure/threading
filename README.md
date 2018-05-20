@@ -5,7 +5,7 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ## Usage
 
 ```clojure
-[threading "0.1.3"]
+[threading "0.1.4"]
 ```
 
 ```clojure
@@ -14,6 +14,28 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ```
 
 ## [API doc](https://tristefigure.github.io/threading/index.html)
+
+## Showcase
+
+```clojure
+(-> the-value
+  
+    (when-> coll?
+      (map-> inc)
+      (->> reduce +))
+
+    (if-> (or-> string? (<- *number-accepted?*))
+      (-> str keyword))
+
+    (when-not->> (>- (if-> (<- (not *number-accepted?*))
+                       (and-> (not-> number?)
+                              valid-string?)
+                       (or-> valid-string?
+                             valid-number?)))
+      (println "Not a valid string")
+      (append-log :not-a-string)
+      (<<- (throw (IllegalArgumentException. "Not a string")))))
+```
 
 ## Arrows
 
@@ -138,6 +160,44 @@ Consider:
 ;; => {:c 4, :a 2, :b 3}
 ```
 
+### Fletchings
+
+Used to shift from a thread-first to a thread-last threading-style, or conversely from thread-last to thread-first.
+
+Use `>-` to shift into thread-first mode in the context of a `->>`-like arrow and use `>>-` to shift into thread-last mode in the context of a `->`-like arrow.
+
+#### What's the role of an arrow fletching vs. an arrowhead
+
+An arrow *fletching* defines where the previous threaded form will be injected in the threading form while an arrow *head* defines where the form at hand will be injected in the threading form *threading slots*.
+
+#### Equivalences
+```clojure
+(->> x (>-  (->  y)))    <=>    (->  x y)    <=>    (->> x (>-> y))
+(->> x (>-  (->> y)))    <=>    (->> x y)    <=>    (->> x (>->> y))
+(->  x (>>- (->  y)))    <=>    (->  y x)    <=>    (->  x (>>-> y))
+(->  x (>>- (->> y)))    <=>    (->> y x)    <=>    (->  x (>>->> y))
+```
+
+Example:
+```clojure
+(->> 100 (>- (->  (/ 10 2))))
+;; expands to (-> 100 (/ 10 2))
+;; => 5
+
+(->> 10  (>- (->> (/ 100 2))))
+;; expands to (->> 10 (/ 100 2))
+;; => 5
+
+(-> (/ 10 2) (>>- (->  100)))
+;; expands to (-> 100 (/ 10 2))
+;; => 5
+
+(-> (/ 100 10) (>>- (->> 2)))
+;; expands to (->> 2 (/ 100 10))
+;; => 5
+```
+
+
 ### More
 
 #### `map->`
@@ -170,7 +230,7 @@ The challenge lying in defining both the `->` and `->>` variants, observe the ac
 Compare:
 ```clojure
 (let [selection (fetch resource opts)]
-  (if (contains? opts :first)
+  (if (<= (count selection) 1)
     (first selection)
     selection)))
 ```
@@ -178,7 +238,7 @@ Compare:
 vs:
 ```clojure
 (-> (fetch resource opts)
-    (if-> (contains? :first) first))
+    (if-> (->> count (<= 1)) first))
 ```
 
 ## TODO
@@ -186,7 +246,7 @@ vs:
 -  `cond->`, maybe `merge->`, etc... Contributions are welcome if they are driven by *an impluse*.
 -  `pp->` is a bit weird at times.
 
-
+-------------------------------------------------------------------------------
 
 Copyright © 2018 TristeFigure
 

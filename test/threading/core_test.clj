@@ -1,7 +1,7 @@
 (ns threading.core-test
   (:use clojure.pprint)
   (:require [clojure.test :refer :all]
-            [shuriken.core :refer [no-print]]
+            [shuriken.core :refer [no-print macroexpand-n]]
             [threading.core :refer :all]))
 
 (deftest test-tap->
@@ -74,13 +74,25 @@
   (is [-1 -1 -1] (map-> (repeat 3 1) -)))
 
 (deftest test-<-
-  (is (= 124 (-> :x
-                 (<- 123)
-                 inc))))
+  (is (= 124 (-> :x (<- 123) inc))))
 
 (deftest test-<<-
-  (is (= 124 (->> :x
-                  (<<- 123)
-                  inc))))
+  (is (= 124 (->> :x (<<- 123) inc))))
 
-(run-tests)
+(deftest test->-
+  (is (= 5 (-> 100 (/ 10 2))
+           (->> 100 (>-> (/ 10 2)))
+           (->> 100 (>- (->  (/ 10 2))))))
+  (is (= 5 (->> 10 (/ 100 2))
+           (->> 10 (>->> (/ 100 2)))
+           (->> 10  (>- (->> (/ 100 2))))))
+  (is (= 5 (->> 100 (>- (/ 10 2))))))
+
+(deftest test->>-
+  (is (= 5 (-> 100 (/ 10 2))
+           (-> (/ 10 2) (>>-> 100))
+           (-> (/ 10 2) (>>- (->  100)))))
+  (is (= 5 (->> 2 (/ 100 10))
+           (-> (/ 100 10) (>>->> 2))
+           (-> (/ 100 10) (>>- (->> 2)))))
+  (is (= 5 (-> 2 (>>- (/ 100 10))))))

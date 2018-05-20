@@ -269,3 +269,29 @@
   (case &threading-variant
     <-  `(do ~@body)
     <<- `(do ~(last body) ~@(butlast body))))
+
+(defthreading
+  "A threading arrow fletching used to change the position at which the
+  threaded form will be injected in the threading slots of the threading form."
+  [>-  "Transitions from a thread-last to a thread-first threading style."
+   >>- "Transitions from a thread-first to a thread-last threading style."]
+  [first-expr last-expr]
+  (case &threading-variant
+    >-  (let [threaded-expr last-expr
+              [verb & args] first-expr]
+          `(~verb ~threaded-expr ~@args))
+    >>- (let [threaded-expr first-expr
+              [verb & args] last-expr]
+          `(~verb ~@args ~threaded-expr))))
+
+(defmacro >-> [expr threaded-expr]
+  `(>- (-> ~expr) ~threaded-expr ))
+
+(defmacro >->> [expr threaded-expr]
+  `(>- (->> ~expr) ~threaded-expr))
+
+(defmacro >>-> [threaded-expr expr]
+  `(>>- ~threaded-expr (-> ~expr)))
+
+(defmacro >>->> [threaded-expr expr]
+  `(>>- ~threaded-expr (->> ~expr)))
