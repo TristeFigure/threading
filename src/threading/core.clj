@@ -134,7 +134,8 @@
 (defmacro ^:no-doc literally [expr]
   `(let [expr# '~expr
          value# ~expr]
-     [(= (str expr#) (str value#))
+     [(and (not (instance? clojure.lang.Iterate value#))
+           (= (str expr#) (str value#)))
       value#]))
 
 (defn ^:no-doc pp->log* [variant max-label-length label result]
@@ -142,6 +143,8 @@
     (debug-print
       (adjust :left max-label-length label)
       result)))
+
+(def ^:dynamic *pp-lazy-max* 100)
 
 (defthreading pp
   [->  "Like `->`, but prints a debug statement for `f` and each expr in `forms`."
@@ -163,14 +166,20 @@
                              ~(str &threading-variant)
                              max-label-length#)]
        (~log-sym (truncate label-f# max-label-length#)
-                 result-f#)
-       (~&threading-variant result-f#
-                        ~@(map (fn [expr]
-                                 `((fn [x#]
-                                     (let [result# (~&threading-variant x# ~expr)]
-                                       (~log-sym ~(str padding expr) result#)
-                                       result#))))
-                               forms)))))
+                 (if (instance? clojure.lang.Iterate result-f#)
+                   (take *pp-lazy-max* result-f#)
+                   result-f#))
+       (~&threading-variant
+         result-f#
+         ~@(map (fn [expr]
+                  `((fn [x#]
+                      (let [result# (~&threading-variant x# ~expr)]
+                        (~log-sym ~(str padding expr)
+                                  (if (instance? clojure.lang.Iterate result#)
+                                    (take *pp-lazy-max* result#)
+                                    result#))
+                        result#))))
+                forms)))))
 
 (defthreading if
   "Threads `expr` through `test` then `then` or `else`. If `else` is
