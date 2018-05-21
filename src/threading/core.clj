@@ -301,7 +301,7 @@
           `(~verb ~@args ~threaded-expr))))
 
 (defmacro >-> [expr threaded-expr]
-  `(>- (-> ~expr) ~threaded-expr ))
+  `(>- (-> ~expr) ~threaded-expr))
 
 (defmacro >->> [expr threaded-expr]
   `(>- (->> ~expr) ~threaded-expr))
