@@ -15,7 +15,7 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ## Usage
 
 ```clojure
-[threading "0.1.4"]
+[threading "0.1.5"]
 ```
 
 ```clojure
@@ -30,21 +30,20 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ```clojure
 (-> the-value
   
-    (when-> coll?
-      (map-> inc)
-      (->> reduce +))
+    (when-> coll? (map-> inc) (->> reduce +))
 
     (if-> (or-> string? (<- *number-accepted?*))
       (-> str keyword))
 
-    (when-not->> (>- (if-> (<- (not *number-accepted?*))
-                       (and-> (not-> number?)
-                              valid-string?)
-                       (or-> valid-string?
-                             valid-number?)))
-      (println "Not a valid string")
-      (append-log :not-a-string)
-      (<<- (throw (IllegalArgumentException. "Not a string")))))
+    (if-> string?
+      (when-not->> (>- (-> valid-string?))
+        (println "Not a valid string")
+        (<<- (throw (IllegalArgumentException. "Not a string")))))
+
+    (when-> (and-> number? (not-> (<- *number-accepted?*)))
+      (<<- (throw (IllegalArgumentException. "Numbers not accepted"))))
+
+    (tap->> (println "Result:")))
 ```
 
 ## Arrows
@@ -72,6 +71,62 @@ If you happen to be in the context of a `->>`-like threading arrow, use `<<-` to
   ...))
 ```
 
+### Fletchings
+
+Used to shift from a thread-first to a thread-last threading-style, or conversely from thread-last to thread-first.
+
+Use `>-` to shift into thread-first mode in the context of a `->>`-like arrow and use `>>-` to shift into thread-last mode in the context of a `->`-like arrow.
+
+#### What's the role of an arrow fletching compared to an arrowhead ?
+
+An *arrow fletching* defines where the previous threaded form will be injected in the threading form while an *arrowhead* defines where the form at hand will be injected in the threading form *threading slots*.
+
+#### Equivalences
+```clojure
+(->> x (>-  (->  y)))    <=>    (->  x y)    <=>    (->> x (>-> y))
+(->> x (>-  (->> y)))    <=>    (->> x y)    <=>    (->> x (>->> y))
+(->  x (>>- (->  y)))    <=>    (->  y x)    <=>    (->  x (>>-> y))
+(->  x (>>- (->> y)))    <=>    (->> y x)    <=>    (->  x (>>->> y))
+```
+
+Example:
+```clojure
+(->> 100 (>- (->  (/ 10 2))))
+;; expands to (-> 100 (/ 10 2))
+;; => 5
+
+(->> 10  (>- (->> (/ 100 2))))
+;; expands to (->> 10 (/ 100 2))
+;; => 5
+
+(-> (/ 10 2) (>>- (-> 100)))
+;; expands to (-> 100 (/ 10 2))
+;; => 5
+
+(-> (/ 100 10) (>>- (->> 2)))
+;; expands to (->> 2 (/ 100 10))
+;; => 5
+```
+
+## Defining new arrows
+
+The challenge lying in defining both the `->` and `->>` variants, observe the actual definition of `tap`:
+
+```clojure
+(defthreading tap
+  "Threads the expr through the forms then returns the value of
+  the initial expr."
+  [-> "Threads like `->`."   ;; Doc suffixes
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [result# ~expr]
+    ;; &threading-variant will be succesively bound to '-> and '->>
+     (~&threading-variant result# ~@forms)
+     result#))
+```
+
+See [`defthreading`](https://tristefigure.github.io/threading/threading.core.html#var-defthreading) for details.
+
 ### Conditionnals
 
 `if->`, `when->`, `if-not->`, `when-not->`
@@ -94,7 +149,7 @@ Consider:
 
 ### Boolean operators
 
-`and->`, `or->`
+`and->`, `or->`, `not->`
 
 Like their Clojure counterparts, these threading arrows will return early and can be used to control the execution flow just like Clojure's `and` & `or`.
 
@@ -170,44 +225,6 @@ Consider:
 ;; => {:c 4, :a 2, :b 3}
 ```
 
-### Fletchings
-
-Used to shift from a thread-first to a thread-last threading-style, or conversely from thread-last to thread-first.
-
-Use `>-` to shift into thread-first mode in the context of a `->>`-like arrow and use `>>-` to shift into thread-last mode in the context of a `->`-like arrow.
-
-#### What's the role of an arrow fletching vs. an arrowhead
-
-An arrow *fletching* defines where the previous threaded form will be injected in the threading form while an arrow *head* defines where the form at hand will be injected in the threading form *threading slots*.
-
-#### Equivalences
-```clojure
-(->> x (>-  (->  y)))    <=>    (->  x y)    <=>    (->> x (>-> y))
-(->> x (>-  (->> y)))    <=>    (->> x y)    <=>    (->> x (>->> y))
-(->  x (>>- (->  y)))    <=>    (->  y x)    <=>    (->  x (>>-> y))
-(->  x (>>- (->> y)))    <=>    (->> y x)    <=>    (->  x (>>->> y))
-```
-
-Example:
-```clojure
-(->> 100 (>- (->  (/ 10 2))))
-;; expands to (-> 100 (/ 10 2))
-;; => 5
-
-(->> 10  (>- (->> (/ 100 2))))
-;; expands to (->> 10 (/ 100 2))
-;; => 5
-
-(-> (/ 10 2) (>>- (->  100)))
-;; expands to (-> 100 (/ 10 2))
-;; => 5
-
-(-> (/ 100 10) (>>- (->> 2)))
-;; expands to (->> 2 (/ 100 10))
-;; => 5
-```
-
-
 ### More
 
 #### `map->`
@@ -215,22 +232,6 @@ Example:
 ```clojure
 (map-> [1 2 3] (+ 3))
 ;; => [4 5 6]
-```
-
-## Defining new arrows
-
-The challenge lying in defining both the `->` and `->>` variants, observe the actual definition of `tap`:
-
-```clojure
-(defthreading tap
-  "Threads the expr through the forms then returns the value of
-  the initial expr."
-  [-> "Threads like `->`."
-   ->> "Threads like `->>`."]
-  [expr & forms]
-  `(let [result# ~expr]
-     (~&threading-variant result# ~@forms) ;; &threading-variant is bound
-     result#))                             ;; to '-> then '->>
 ```
 
 ## Why use `threading` ?
@@ -245,10 +246,10 @@ Compare:
     selection)))
 ```
 
-vs:
+against:
 ```clojure
 (-> (fetch resource opts)
-    (if-> (->> count (<= 1)) first))
+    (if-> (-> count (<= 1)) first))
 ```
 
 ## TODO

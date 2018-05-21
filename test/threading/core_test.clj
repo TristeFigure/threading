@@ -66,8 +66,12 @@
   (is (false? (and->> 1 number? (> 0)))))
 
 (deftest test-or->
-  (is (true?  (or->  1 number? (> 0))))
+  (is (true? (or->  1 number? (> 0))))
   (is (true? (or->> 1 number? (> 0)))))
+
+(deftest test-not->
+  (is (false? (not->  1  inc  number?)))
+  (is (true?  (not->> :x name number?))))
 
 (deftest test-map->
   (is [3 3 3]    (map-> (repeat 3 1) inc inc))

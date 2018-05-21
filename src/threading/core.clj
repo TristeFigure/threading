@@ -244,6 +244,13 @@
                      `(~&threading-variant ~v-sym ~e))
                    forms)))))
 
+(defthreading not
+  "Threads `expr` through the `forms` then returns the negated result."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(not (~&threading-variant ~expr ~@forms)))
+
 (defthreading map
   "For an `expr` that will yield a sequence, threads each of its values
   through the `forms`."
