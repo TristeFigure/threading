@@ -196,7 +196,7 @@ An *arrow fletching* redefines where the threaded form will be injected in the t
 
 (-> [threaded-form]
     (>>- (-> [threading-slot] [threading slot] ... [threaded-form])))
-    ;;              arrow controlled      new position redefined by the flecthing
+;;                   arrow controlled      new position redefined by the flecthing
 ```
 
 #### Equivalences
