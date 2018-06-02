@@ -190,9 +190,13 @@ Use `>-` to shift into thread-first mode in the context of a `->>`-like arrow an
 
 An *arrow fletching* redefines where the threaded form will be injected in the threading form, while an *arrowhead* defines where this threaded form will be injected in the threading form inner *threading slots*.
 
-```
+```clojure
 (->  [threaded-form]  [threading-slot]  [threading-slot]  ...)
-;;fletching controlled         arrow-controlled
+;; fletching controlled         arrow controlled
+
+(-> [threaded-form]
+    (>>- (-> [threading-slot] [threading slot] ... [threaded-form])))
+    ;;              arrow controlled      new position redefined by the flecthing
 ```
 
 #### Equivalences
