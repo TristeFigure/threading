@@ -30,15 +30,16 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ```clojure
 (-> the-value
     ;; obvious arrows
-    (when-> coll? (map-> inc) (->> reduce +))
+    (when-> coll? (-> (reduce +)))
 
     ;; anti-threading arrows
-    (if-> (or-> string? (<- *number-accepted?*))
-      (-> str keyword))
+    (if-> (and-> number? (<- *number-accepted?*))
+      inc
+      (tap (swap! str-count inc))
 
     ;; arrow fletchings
-    (if-> string?
-      (when-not->> (>- (-> str/ends-with? "xyz"))
+    (if-> keyword?
+      (when-not->> (>- (-> str (str/ends-with? "xyz")))
         (println "Not a valid string")
         (<<- (throw (IllegalArgumentException. "Not a string")))))
 
@@ -105,14 +106,11 @@ Consider:
 ;; => ["abc"]
 (and-> "abc" string? vector)
 ;; => ["abc"]
-
-(and 123 (string? 123) (println 123))
-;; => false
-(and-> 123 string? println)
-;; => false
 ```
 
 ### Control flow
+
+#### `tap->`
 
 `tap->` gets is inspiration from Ruby's [`tap`](https://apidock.com/ruby/Object/tap)
 
@@ -190,15 +188,6 @@ Use `>-` to shift into thread-first mode in the context of a `->>`-like arrow an
 
 An *arrow fletching* redefines where the threaded form will be injected in the threading form, while an *arrowhead* defines where this threaded form will be injected in the threading form inner *threading slots*.
 
-```clojure
-(->  [threaded-form]  [threading-slot]  [threading-slot]  ...)
-;; fletching controlled         arrow controlled
-
-(-> [threaded-form]
-    (>>- (-> [threading-slot] [threading slot] ... [threaded-form])))
-;;                   arrow controlled      new position redefined by the flecthing
-```
-
 #### Equivalences
 ```clojure
 (->> x (>-  (->  y)))    <=>    (->  x y)    <=>    (->> x (>-> y))
@@ -207,23 +196,12 @@ An *arrow fletching* redefines where the threaded form will be injected in the t
 (->  x (>>- (->> y)))    <=>    (->> y x)    <=>    (->  x (>>->> y))
 ```
 
-Example:
+Examples:
 ```clojure
-(->> 100 (>- (->  (/ 10 2))))
-;; expands to (-> 100 (/ 10 2))
-;; => 5
-
-(->> 10  (>- (->> (/ 100 2))))
-;; expands to (->> 10 (/ 100 2))
-;; => 5
-
-(-> (/ 10 2) (>>- (-> 100)))
-;; expands to (-> 100 (/ 10 2))
-;; => 5
-
-(-> (/ 100 10) (>>- (->> 2)))
-;; expands to (->> 2 (/ 100 10))
-;; => 5
+(->> 100 (>- (->  (/ 10))))  ;; expands to (-> 100 (/ 10))
+(->> 10  (>- (->> (/ 100)))) ;; expands to (->> 10 (/ 100))
+(-> (/ 10) (>>- (-> 100)))   ;; expands to (-> 100 (/ 10))
+(-> (/ 10) (>>- (->> 100)))  ;; expands to (->> 100 (/ 10))
 ```
 
 ## Defining new arrows
