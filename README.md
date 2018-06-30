@@ -180,9 +180,9 @@ Consider:
 
 ## Fletchings
 
-Used to shift from a thread-first to a thread-last threading-style, or conversely from thread-last to thread-first.
-
-Use `>-` to shift into thread-first mode in the context of a `->>`-like arrow and use `>>-` to shift into thread-last mode in the context of a `->`-like arrow.
+Used to shift from a thread-first to a thread-last threading-style, or conversely from thread-last to thread-first:
+  - `>-` to shift into thread-first mode in the context of a `->>`-like arrow
+  - `>>-` to shift into thread-last mode in the context of a `->`-like arrow
 
 #### What's the role of an arrow fletching compared to an arrowhead ?
 
