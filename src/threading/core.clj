@@ -1,8 +1,11 @@
 (ns threading.core
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [shuriken.core :refer [conform! adjust truncate lines join-lines
-                                   format-code debug-print]]))
+            [shuriken.spec :refer [conform!]]
+            [shuriken.string :refer [adjust truncate lines join-lines
+                                     format-code]]
+            [shuriken.debug :refer [debug-print]]
+            [shuriken.associative :refer [map-keys map-vals]]))
 
 (s/def ::macro-variants
   (s/and vector?
@@ -270,6 +273,28 @@
      (map (fn [f#]
             (~&threading-variant f# ~@forms))
           expr#)))
+
+(defthreading map-vals
+  "For an `expr` that will yield an associative structure, threads each of its
+  values through the `forms`."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [expr# ~expr]
+     (map-vals (fn [f#]
+                 (~&threading-variant f# ~@forms))
+               expr#)))
+
+(defthreading map-keys
+  "For an `expr` that will yield an associative structure, threads each of its
+  keys through the `forms`."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [expr# ~expr]
+     (map-keys (fn [f#]
+                 (~&threading-variant f# ~@forms))
+               expr#)))
 
 (defthreading
   [<-

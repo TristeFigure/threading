@@ -74,8 +74,16 @@
   (is (true?  (not->> :x name number?))))
 
 (deftest test-map->
-  (is [3 3 3]    (map-> (repeat 3 1) inc inc))
-  (is [-1 -1 -1] (map-> (repeat 3 1) -)))
+  (is (= [3 3 3]    (map-> (repeat 3 1) inc inc)))
+  (is (= [-1 -1 -1] (map-> (repeat 3 1) -))))
+
+(deftest test-map-keys->
+  (is (= {"ax" 1} (map-keys->  {:a 1} name (str "x"))))
+  (is (= {"xa" 1} (map-keys->> {:a 1} name (str "x")))))
+
+(deftest test-map-vals->
+  (is (= {:a 1/2} (map-vals->  {:a 1} (/ 2))))
+  (is (= {:a 2}   (map-vals->> {:a 1} (/ 2)))))
 
 (deftest test-<-
   (is (= 124 (-> :x (<- 123) inc))))
