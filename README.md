@@ -178,7 +178,7 @@ Consider:
 ;; => [4 5 6]
 ```
 
-Similarly, `map-keys->` & `map-vals`.
+Similarly, `map-keys->` & `map-vals->`.
 
 ## Fletchings
 
