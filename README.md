@@ -70,8 +70,8 @@ Consider:
 
 If you happen to be in the context of a `->>`-like threading arrow, use `<<-` to antithread a value.
 ```clojure
-(when-not-> 123 (or->> (re-matches #"[a-z]+") (<<- *number-accepted?*)
-  ...))
+(when-> 123 (or->> (<<- *number-accepted?*) (re-matches #"[a-z]+"))
+  ...)
 ```
 
 ### Conditionnals
