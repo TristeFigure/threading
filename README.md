@@ -15,7 +15,7 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ## Usage
 
 ```clojure
-[threading "0.1.7"]
+[threading "0.1.8"]
 ```
 
 ```clojure
@@ -169,7 +169,7 @@ Consider:
 ;; => {:c 4, :a 2, :b 3}
 ```
 
-### More
+### Sequential operations
 
 #### `map->`
 
@@ -178,7 +178,7 @@ Consider:
 ;; => [4 5 6]
 ```
 
-Similarly, `map-keys->` & `map-vals->`.
+Similarly, `mapcat->`, `map-keys->` & `map-vals->`.
 
 ## Fletchings
 

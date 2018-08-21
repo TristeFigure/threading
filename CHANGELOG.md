@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.1.8] - 2018-08-22
+- `mapcat->`.
+
 ## [0.1.7] - 2018-06-15
 ## Added
 - `map-keys->` & `map-vals->`.

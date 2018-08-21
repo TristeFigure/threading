@@ -77,6 +77,12 @@
   (is (= [3 3 3]    (map-> (repeat 3 1) inc inc)))
   (is (= [-1 -1 -1] (map-> (repeat 3 1) -))))
 
+(deftest test-mapcat->
+  (is (= [3 3 3]    (mapcat-> (vec (repeat 3 [1]))
+                              (update 0 inc) (update 0 inc))))
+  (is (= [-1 -1 -1] (mapcat-> (vec (repeat 3 [1]))
+                              (update 0 -)))))
+
 (deftest test-map-keys->
   (is (= {"ax" 1} (map-keys->  {:a 1} name (str "x"))))
   (is (= {"xa" 1} (map-keys->> {:a 1} name (str "x")))))

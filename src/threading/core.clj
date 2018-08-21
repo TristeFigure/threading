@@ -274,6 +274,18 @@
             (~&threading-variant f# ~@forms))
           expr#)))
 
+(defthreading mapcat
+  "For an `expr` that will yield a sequence, threads each of its values
+  through the `forms` then returns the individual results concatenated together
+  as a seq."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [expr# ~expr]
+     (mapcat (fn [f#]
+               (~&threading-variant f# ~@forms))
+             expr#)))
+
 (defthreading map-vals
   "For an `expr` that will yield an associative structure, threads each of its
   values through the `forms`."
