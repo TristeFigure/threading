@@ -95,14 +95,14 @@
                                                   ~'&threading-opts '~opts]
                                               ~@body))))
                                       bodies)]]
-                (do (->> {:def-macro  'defmacro
+                (do (->> {:op        'defmacro
                           :name       specific-name
                           :doc-string specific-doc
                           :attr-map   nil ; TODO
                           :bodies     bodies}
                          (remove (fn [[k v]] (nil? v)))
                          (into {})
-                         (s/unform :shuriken.spec/macro-definition)))))))
+                         (s/unform :shuriken.spec/defmacro-form)))))))
 
 (defthreading tap
   "Threads the expr through the forms then returns the value of

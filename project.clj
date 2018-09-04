@@ -1,10 +1,10 @@
-(defproject threading "0.1.8"
+(defproject threading "0.1.9"
   :description "A threading macro library as sobber as its name"
   :url "https://github.com/TristeFigure/threading"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojars.tristefigure/shuriken "0.14.4"]]
+                 [org.clojars.tristefigure/shuriken "0.14.9"]]
   :profiles {:dev  {:dependencies [[codox-theme-rdash "0.1.2"]]}}
   :plugins [[lein-codox "0.10.3"]]
   :codox {:source-uri "https://github.com/TristeFigure/threading/" \

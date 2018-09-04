@@ -15,7 +15,7 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ## Usage
 
 ```clojure
-[threading "0.1.8"]
+[threading "0.1.9"]
 ```
 
 ```clojure

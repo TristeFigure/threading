@@ -1,7 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.1.9] - 2018-09-04
+## Changed
+- Updated `shuriken` to `0.14.9`.
+
 ## [0.1.8] - 2018-08-22
+## Added
 - `mapcat->`.
 
 ## [0.1.7] - 2018-06-15
