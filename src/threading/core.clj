@@ -104,6 +104,47 @@
                          (into {})
                          (s/unform :shuriken.spec/defmacro-form)))))))
 
+(defthreading
+  "A threading arrow fletching used to change the position at which the
+  threaded form will be injected in the threading slots of the threading form."
+  [>-  "Transitions from a thread-last to a thread-first threading style."
+   >>- "Transitions from a thread-first to a thread-last threading style."]
+  [first-expr last-expr]
+  (case &threading-variant
+    >-  (let [threaded-expr last-expr
+              [verb & args] first-expr]
+          `(~verb ~threaded-expr ~@args))
+    >>- (let [threaded-expr first-expr
+              [verb & args] last-expr]
+          `(~verb ~@args ~threaded-expr))))
+
+(defmacro >-> [expr threaded-expr]
+  `(>- (-> ~expr) ~threaded-expr))
+
+(defmacro >->> [expr threaded-expr]
+  `(>- (->> ~expr) ~threaded-expr))
+
+(defmacro >>-> [threaded-expr expr]
+  `(>>- ~threaded-expr (-> ~expr)))
+
+(defmacro >>->> [threaded-expr expr]
+  `(>>- ~threaded-expr (->> ~expr)))
+
+(defthreading
+  [<-
+   "Used to provide arbitrary input and output values to forms threading in the
+   style of `->`.
+   The threaded form will be evaluated although its value will be
+   discarded."
+
+   <<-
+   "Like [[<-]] but must be used in the context of a form threading in the
+   style of `->>`."]
+  [& body]
+  (case &threading-variant
+    <-  `(do ~@body)
+    <<- `(do ~(last body) ~@(butlast body))))
+
 (defthreading tap
   "Threads the expr through the forms then returns the value of
   the initial expr."
@@ -274,6 +315,17 @@
             (~&threading-variant f# ~@forms))
           expr#)))
 
+(defthreading mapv
+  "For an `expr` that will yield a sequence, threads each of its values
+  through the `forms`. Returns the transformed sequence as a vector."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  `(let [expr# ~expr]
+     (mapv (fn [f#]
+            (~&threading-variant f# ~@forms))
+          expr#)))
+
 (defthreading mapcat
   "For an `expr` that will yield a sequence, threads each of its values
   through the `forms` then returns the individual results concatenated together
@@ -308,43 +360,31 @@
                  (~&threading-variant f# ~@forms))
                expr#)))
 
-(defthreading
-  [<-
-   "Used to provide arbitrary input and output values to forms threading in the
-   style of `->`.
-   The threaded form will be evaluated although its value will be
-   discarded."
+(defthreading juxt
+  "Threads `expr` through each form individually collecting the results in a
+  lazy sequence."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr & forms]
+  (let [expr-sym (gensym "expr-")]
+    `(let [~expr-sym ~expr]
+       (lazy-cat
+         ~@(map (fn [form]
+                  `[(~&threading-variant ~expr-sym ~form)])
+                forms)))))
 
-   <<-
-   "Like [[<-]] but must be used in the context of a form threading in the
-   style of `->>`."]
-  [& body]
-  (case &threading-variant
-    <-  `(do ~@body)
-    <<- `(do ~(last body) ~@(butlast body))))
-
-(defthreading
-  "A threading arrow fletching used to change the position at which the
-  threaded form will be injected in the threading slots of the threading form."
-  [>-  "Transitions from a thread-last to a thread-first threading style."
-   >>- "Transitions from a thread-first to a thread-last threading style."]
-  [first-expr last-expr]
-  (case &threading-variant
-    >-  (let [threaded-expr last-expr
-              [verb & args] first-expr]
-          `(~verb ~threaded-expr ~@args))
-    >>- (let [threaded-expr first-expr
-              [verb & args] last-expr]
-          `(~verb ~@args ~threaded-expr))))
-
-(defmacro >-> [expr threaded-expr]
-  `(>- (-> ~expr) ~threaded-expr))
-
-(defmacro >->> [expr threaded-expr]
-  `(>- (->> ~expr) ~threaded-expr))
-
-(defmacro >>-> [threaded-expr expr]
-  `(>>- ~threaded-expr (-> ~expr)))
-
-(defmacro >>->> [threaded-expr expr]
-  `(>>- ~threaded-expr (->> ~expr)))
+(defthreading let
+  "Threads `expr` through each bound expression then through each form in
+  `body`. Returns the value of its last expr."
+  [->  "Threads like `->`."
+   ->> "Threads like `->>`."]
+  [expr bindings & body]
+  (let [input-sym (gensym "input-")
+        adapt (fn [expr] `(~&threading-variant ~input-sym ~expr))]
+    `(as-> ~expr ~input-sym
+       (let ~(->> bindings
+                  (partition 2)
+                  (>- (map-vals-> adapt))
+                  (apply concat)
+                  vec)
+         ~@(map adapt body)))))

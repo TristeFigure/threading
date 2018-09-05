@@ -1,37 +1,41 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.1.10] - 2018-09-05
+### Added 
+- `mapv->`, `juxt->`, `let->`.
+
 ## [0.1.9] - 2018-09-04
-## Changed
+### Changed
 - Updated `shuriken` to `0.14.9`.
 
 ## [0.1.8] - 2018-08-22
-## Added
+### Added
 - `mapcat->`.
 
 ## [0.1.7] - 2018-06-15
-## Added
+### Added
 - `map-keys->` & `map-vals->`.
 
 ## [0.1.6] - 2018-05-21
-## Fixed
+### Fixed
 - protect `pp->` & `pp->>` against infinite sequences.
 
 ## [0.1.5] - 2018-05-21
-## Added
+### Added
 - `not->`.
 
 ## [0.1.4] - 2018-05-20
-## Added
+### Added
 - arrow fletchings: `>-` & `>>-`.
 
 ## [0.1.3] - 2018-05-19
-## Added
-- `map->` and `map->>`
-- README + Documentation + API doc
+### Added
+- `map->` and `map->>`.
+- README + Documentation + API doc.
 
 ## [0.1.2] - 2018-05-09
-## Added
+### Added
 - `<<-` to complement `<-` in the context of forms threading in the style
   of `->>`.
 
@@ -41,4 +45,4 @@ All notable changes to this project will be documented in this file. This change
 - `when-not->` & `when-not->>`.
 
 ## [0.1.0] - 2018-04-30
-Initial release
+Initial release.

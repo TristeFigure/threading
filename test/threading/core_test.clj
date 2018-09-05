@@ -77,6 +77,14 @@
   (is (= [3 3 3]    (map-> (repeat 3 1) inc inc)))
   (is (= [-1 -1 -1] (map-> (repeat 3 1) -))))
 
+(deftest test-mapv->
+  (is (-> (mapv-> (repeat 3 1) inc inc)
+          (and->> (= [3 3 3])
+                  vector?)))
+  (is (-> (mapv-> (repeat 3 1) -)
+          (and->> (= [-1 -1 -1])
+                  vector?))))
+
 (deftest test-mapcat->
   (is (= [3 3 3]    (mapcat-> (vec (repeat 3 [1]))
                               (update 0 inc) (update 0 inc))))
@@ -90,6 +98,19 @@
 (deftest test-map-vals->
   (is (= {:a 1/2} (map-vals->  {:a 1} (/ 2))))
   (is (= {:a 2}   (map-vals->> {:a 1} (/ 2)))))
+
+(deftest test-juxt->
+  (is (= [1/2 0 -1] (-> 1 (juxt->  (/ 2) dec -))))
+  (is (= [2   0 -1] (-> 1 (juxt->> (/ 2) dec -)))))
+
+(deftest test-let->
+  (is (= 3/2 (-> 1 (let->  [a (/ 2)] (+ a)))))
+  (is (= 3   (-> 1 (let->> [a (/ 2)] (+ a)))))
+  (let [x (atom 0)]
+    (is (= 4 (-> 1 (let-> [_ (<- (swap! x inc))
+                           _ (<- (swap! x inc))]
+                          (<- (swap! x inc))
+                          (<- (swap! x inc))))))))
 
 (deftest test-<-
   (is (= 124 (-> :x (<- 123) inc))))

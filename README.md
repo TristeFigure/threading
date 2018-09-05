@@ -1,6 +1,6 @@
 # threading
 
-A Clojure library that provides a small set of threading arrows, the kind of arrows you need on an impulse.
+A Clojure library that provides a small set of threading arrows of the kind you need on an impulse.
 
 <p align="center">
   <img src="http://pilavakis.net/images/new_pa22.gif">
@@ -15,7 +15,7 @@ A Clojure library that provides a small set of threading arrows, the kind of arr
 ## Usage
 
 ```clojure
-[threading "0.1.9"]
+[threading "0.1.10"]
 ```
 
 ```clojure
