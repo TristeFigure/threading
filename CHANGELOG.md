@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.2.0] - 2018-09-05
+### Added
+- `let->` & `binding->` arrows.
+- Teleport fletching/arrow: `•-` & `-•`.
+- `>-args` fletching.
+
+### Changed
+- `>-` becomes `>>-` and vice-versa.
+
+
 ## [0.1.10] - 2018-09-05
 ### Added 
 - `mapv->`, `juxt->`, `let->`.

@@ -1,6 +1,6 @@
 # threading
 
-A Clojure library that provides a small set of threading arrows of the kind you need on an impulse.
+A Clojure library that provides the kind of arrows you need on an impulse as well as some arrow transformers called *fletchings*.
 
 <p align="center">
   <img src="http://pilavakis.net/images/new_pa22.gif">
@@ -12,10 +12,34 @@ A Clojure library that provides a small set of threading arrows of the kind you 
   </i>
 </p>
 
+<!-- MarkdownTOC levels="1,2,3" autolink="true" -->
+
+- [Usage](#usage)
+- [API doc](#api-doc)
+- [Driving concepts](#driving-concepts)
+  - [The problem](#the-problem)
+  - [The solution](#the-solution)
+- [Arrows](#arrows)
+  - [The anti-threading arrow](#the-anti-threading-arrow)
+  - [Conditionnals & boolean operators](#conditionnals--boolean-operators)
+  - [Binding arrows](#binding-arrows)
+  - [Other control flow](#other-control-flow)
+  - [Debugging](#debugging)
+  - [Sequential operations](#sequential-operations)
+- [Fletchings](#fletchings)
+  - [Basic fletchings: `>-` & `>>-`](#basic-fletchings-----)
+  - [`>-args`](#-args)
+  - [Teleport fletching/arrow](#teleport-fletchingarrow)
+- [Defining new arrows](#defining-new-arrows)
+- [Why use `threading` ?](#why-use-threading-)
+- [TODO](#todo)
+
+<!-- /MarkdownTOC -->
+
 ## Usage
 
 ```clojure
-[threading "0.1.10"]
+[threading "0.2.0"]
 ```
 
 ```clojure
@@ -25,60 +49,72 @@ A Clojure library that provides a small set of threading arrows of the kind you 
 
 ## [API doc](https://tristefigure.github.io/threading/index.html)
 
-## Showcase
+## Driving concepts
 
+### The problem
+I came up with this library to circumvent limitations of some arrows from `clojure.core` and other threading libraries, namely the unability for the programmer to decide whether an arrow should thread its expression in a specific *threading slot* or not.
+
+Let's observe how `clojure.core/cond->` works:
 ```clojure
-(-> the-value
-    ;; obvious arrows
-    (when-> coll? (-> (reduce +)))
-
-    ;; anti-threading arrows
-    (if-> (and-> number? (<- *number-accepted?*))
-      inc
-      (tap (swap! str-count inc))
-
-    ;; arrow fletchings
-    (if-> keyword?
-      (when-not->> (>- (-> str (str/ends-with? "xyz")))
-        (println "Not a valid string")
-        (<<- (throw (IllegalArgumentException. "Not a string")))))
-
-    (when-> (and-> number? (not-> (<- *number-accepted?*)))
-      (<- (throw (IllegalArgumentException. "Numbers not accepted"))))
-
-    (tap->> (println "Result:")))
+(cond-> THREADED-EXPR
+  true THREADING-SLOT       
+  false THREADING-SLOT)
 ```
+The problem I want to point is the fact conditions in this threading arrow cannot receive the threaded expression. Similarly, the cases matching each condition must receive the threaded expression and we don't have control over this either.
+
+Same problem with `pallet.thread-expr/if->`:
+```clojure
+(-> 1
+    (if-> true
+      THEN-THREADING-SLOT
+      ELSE-THREADING-SLOT))
+```
+the condition cannot receive the threaded expr and the cases must receive it no matter what.
+
+### The solution
+**All subforms in a threading form are considered threading slots by arrows in this library.**
+
+As an equivalent of `constantly`, the `<-` **antithreading** arrow can be used to make a form evaluate the threaded expression, discard the result and return an arbitrary value instead.
+
+Thus, `if->` becomes:
+```clojure
+(-> 1 (if-> (<- true)
+        inc
+        (<- 0)))
+```
+
+or just as possibly,
+```clojure
+(-> 1 (if-> (-> number? not)
+        (<- (throw (IllegalArgumentException. "not a number")))
+        inc))
+```
+
+This is the central piece of the first goal of this library: to provide obvious and dealry missed arrows such as `cond->` and `if->` without sacrificing on flexibility thanks to the antithreading arrow `<-`.
+
+The secondary goal of this lib is to provide arrow transformers called **fletchings**. They look pretty nice on the screen :-).
 
 ## Arrows
 
 **All of the arrows below come with both a `->` variant and a `->>` variant.**
 
-**All of their arguments are forms in which the threaded form will be injected, either at the beginning or the end, depending on which variant is used.**
-
-As such each argument of these threading arrows can be considered as a **threading slot**.
+There is [a great and simple way to define them](#defining-new-arrows) and you're invited to collaborate!
 
 ### The anti-threading arrow
 
-As a threading equivalent to `constantly`, and as a way to return a value from a *threading slot* that does not depend on the threaded value, use the `<-` *anti-threading* arrow:
+As said above, `<-` is an equivalent to `constantly`. Use `<-` in the context of a form threading in the style of `->`, and `<<-` in the context of arrows like `->>`
 
-Consider:
 ```clojure
-(-> 123
-    (when-not-> (or-> string? (<- *number-accepted?*))
-      (throw (IllegalArgumentException. "Not a string"))))
+(->  1 (<-  42)) ;; => 42
+(->> 1 (<<- 42)) ;; => 42
 ```
 
-If you happen to be in the context of a `->>`-like threading arrow, use `<<-` to antithread a value.
-```clojure
-(when-> 123 (or->> (<<- *number-accepted?*) (re-matches #"[a-z]+"))
-  ...)
-```
+### Conditionnals & boolean operators
 
-### Conditionnals
+- `if->`, `when->`, `if-not->`, `when-not->`
+- `and->`, `or->`, `not->`
 
-`if->`, `when->`, `if-not->`, `when-not->`
-
-Contrary to their Clojure counterparts (`if`, `when`, etc ...), these threading arrows return the threaded value rather than `nil` when the predicate fails.
+Contrary to their Clojure counterparts (`if`, `when`, etc ...), these arrows (except `not->`) return the threaded value rather than `nil` when they "fail".
 
 Consider:
 ```clojure
@@ -94,21 +130,25 @@ Consider:
 ;; => [123] (rather than [nil])
 ```
 
-### Boolean operators
+### Binding arrows
 
-`and->`, `or->`, `not->`
+`let->` and `binding->`.
 
-Like their Clojure counterparts, these threading arrows will return early and can be used to control the execution flow just like Clojure's `and` & `or`.
-
-Consider:
 ```clojure
-(and (string? "abc") (vector "abc"))
-;; => ["abc"]
-(and-> "abc" string? vector)
-;; => ["abc"]
+(-> 1
+    (let-> [double (* 2)]
+      (+ double)))
+;; => 3
 ```
 
-### Control flow
+### Other control flow
+
+#### `juxt->`
+
+```clojure
+(-> 1 (juxt-> (/ 2) dec -))
+;; => '(1/2 0 -1)
+```
 
 #### `tap->`
 
@@ -178,32 +218,60 @@ Consider:
 ;; => [4 5 6]
 ```
 
-Similarly, `mapcat->`, `map-keys->` & `map-vals->`.
+Similarly, `mapv->`, `mapcat->`, `map-keys->` & `map-vals->`.
+
 
 ## Fletchings
 
+### Basic fletchings: `>-` & `>>-`
+
 Used to shift from a thread-first to a thread-last threading-style, or conversely from thread-last to thread-first:
-  - `>-` to shift into thread-first mode in the context of a `->>`-like arrow
-  - `>>-` to shift into thread-last mode in the context of a `->`-like arrow
-
-#### What's the role of an arrow fletching compared to an arrowhead ?
-
-An *arrow fletching* redefines where the threaded form will be injected in the threading form, while an *arrowhead* defines where this threaded form will be injected in the threading form inner *threading slots*.
+  - `>>-` to shift into thread-first mode in the context of a `->>`-like arrow
+  - `>-` to shift into thread-last mode in the context of a `->`-like arrow
 
 #### Equivalences
 ```clojure
-(->> x (>-  (->  y)))    <=>    (->  x y)    <=>    (->> x (>-> y))
-(->> x (>-  (->> y)))    <=>    (->> x y)    <=>    (->> x (>->> y))
-(->  x (>>- (->  y)))    <=>    (->  y x)    <=>    (->  x (>>-> y))
-(->  x (>>- (->> y)))    <=>    (->> y x)    <=>    (->  x (>>->> y))
+(->  x (>-  (->  y)))    <=>    (->  y x)    <=>    (->  x (>-> y))
+(->  x (>-  (->> y)))    <=>    (->> y x)    <=>    (->  x (>->> y))
+(->> x (>>- (->  y)))    <=>    (->  x y)    <=>    (->> x (>>-> y))
+(->> x (>>- (->> y)))    <=>    (->> x y)    <=>    (->> x (>>->> y))
 ```
 
 Examples:
 ```clojure
-(->> 100 (>- (->  (/ 10))))  ;; expands to (-> 100 (/ 10))
-(->> 10  (>- (->> (/ 100)))) ;; expands to (->> 10 (/ 100))
-(-> (/ 10) (>>- (-> 100)))   ;; expands to (-> 100 (/ 10))
-(-> (/ 10) (>>- (->> 100)))  ;; expands to (->> 100 (/ 10))
+(->> 100   (>>- (->  (/ 10))))  ;; expands to (->  100 (/ 10))
+(->> 10    (>>- (->> (/ 100)))) ;; expands to (->> 10  (/ 100))
+(-> (/ 10) (>-  (->  100)))     ;; expands to (->  100 (/ 10))
+(-> (/ 10) (>-  (->> 100)))     ;; expands to (->> 100 (/ 10))
+
+```
+### `>-args`
+
+So that an arrows applies to a form's subforms rather than to the form itself.
+
+```clojure
+(-> 1 (>-args (-> (+ inc (/ 2))))) ;; 5/2
+;; is equivalent to
+(let [x 1]
+  (+ (-> x inc) (-> x (/ 2))))
+```
+
+Similarly:
+```clojure
+(->  1 (>-args  (->> (+ inc (/ 2))))) ;; 4
+(->> 1 (>>-args (->  (+ inc (/ 2))))) ;; 5/2
+(->> 1 (>>-args (->> (+ inc (/ 2))))) ;; 4
+```
+
+### Teleport fletching/arrow
+
+The `•-` fletching stores the threaded expression on the stack and returns the computation represented by the threading form. Any deep occurence of the `-•` arrow in the threading form will thread this stored value to its inner expressions.
+
+```clojure
+(-> 1  (•-  (+ 100 (-•  (/ 2))))) ;; => 100.5
+(-> 1  (•-  (+ 100 (-•• (/ 2))))) ;; => 102
+(->> 1 (••- (+ 100 (-•  (/ 2))))) ;; => 100.5
+(->> 1 (••- (+ 100 (-•• (/ 2))))) ;; => 102
 ```
 
 ## Defining new arrows
@@ -211,10 +279,10 @@ Examples:
 The challenge lying in defining both the `->` and `->>` variants, observe the actual definition of `tap`:
 
 ```clojure
-(defthreading tap
+(defthreading tap ;; name prefix (optional). You can also write "tap :suffix".
   "Threads the expr through the forms then returns the value of
-  the initial expr."
-  [-> "Threads like `->`."   ;; Doc suffixes
+  the initial expr.";; Doc body (optional)
+  [->  "Threads like `->`."   ;; Doc suffixes (optional)
    ->> "Threads like `->>`."]
   [expr & forms]
   `(let [result# ~expr]
@@ -223,7 +291,7 @@ The challenge lying in defining both the `->` and `->>` variants, observe the ac
      result#))
 ```
 
-See [`defthreading`](https://tristefigure.github.io/threading/threading.core.html#var-defthreading) for details.
+See [`defthreading`](https://tristefigure.github.io/threading/threading.core.html#var-defthreading) for details and the [sources](https://github.com/TristeFigure/threading/blob/master/src/threading/core.clj) for more simple examples to work from.
 
 ## Why use `threading` ?
 
@@ -245,7 +313,7 @@ against:
 
 ## TODO
 
--  `cond->`, maybe `merge->`, etc... Contributions are welcome if they are driven by *an impluse*.
+-  `cond->`, maybe `merge->`, etc... Contributions are welcomed if they are driven by *an impluse*.
 -  `pp->` is a bit weird at times.
 
 -------------------------------------------------------------------------------
