@@ -434,19 +434,19 @@
 (def ^:private •-value-sym (gensym "•-value-"))
 
 (defthreading
-  "Stores `expr` on the stack and returns the computation represented by
-  `form`. In `form`, any deep occurence of the `-•` arrow will thread
-  this value stored on the stack to its inner expressions.
+  "Stores `expr` on the stack then threads it to `form`.
+  In `form`, any deep occurence of the `-•` arrow will thread this
+  value stored on the stack to its inner expressions.
 
   Note that `-•` can only be used within the body of a `•-` form."
   [•-  "Must be used in the context of a thread-first arrow."
    ••- "Must be used in the context of a thread-last arrow."]
   [first-expr second-expr]
-  (let [[expr form] (case &threading-variant
-                      •-  [first-expr  second-expr]
-                      ••- [second-expr first-expr])]
+  (let [[expr form arrow] (case &threading-variant
+                            •-  [first-expr  second-expr '->]
+                            ••- [second-expr first-expr  '->>])]
     `(let [~•-value-sym ~expr]
-       ~form)))
+       (~arrow ~•-value-sym ~form))))
 
 (defthreading
   "See [[•-]]."
