@@ -115,11 +115,17 @@
 
 (deftest test-map-keys->
   (is (= {"ax" 1} (map-keys->  {:a 1} name (str "x"))))
-  (is (= {"xa" 1} (map-keys->> {:a 1} name (str "x")))))
+  (is (= {"xa" 1} (map-keys->> {:a 1} name (str "x"))))
+  (is (= [["a" 1] ["b" 2]]
+         (map-keys->  [["a" 1] ["b" 2]] name)
+         (map-keys-> '(["a" 1] ["b" 2]) name))))
 
 (deftest test-map-vals->
   (is (= {:a 1/2} (map-vals->  {:a 1} (/ 2))))
-  (is (= {:a 2}   (map-vals->> {:a 1} (/ 2)))))
+  (is (= {:a 2}   (map-vals->> {:a 1} (/ 2))))
+  (= [[:a 2] [:b 3]]
+     (map-vals->  [[:a 1] [:b 2]] inc)
+     (map-vals-> '([:a 1] [:b 2]) inc)))
 
 (deftest test-juxt->
   (is (= [1/2 0 -1] (-> 1 (juxt->  (/ 2) dec -))))

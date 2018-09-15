@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.3.1] - 2018-09-15
+### Fixed:
+- updated shuriken to version `0.14.15` in to order to fix order of
+  `map-vals->` and `map-keys->` on lists.
+
 ## [0.3.0] - 2018-09-08
 - `•-` stores and now threads its expression to the form as well.
 

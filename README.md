@@ -39,7 +39,7 @@ A Clojure library that provides the kind of arrows you need on an impulse as wel
 ## Usage
 
 ```clojure
-[threading "0.3.0"]
+[threading "0.3.1"]
 ```
 
 ```clojure
