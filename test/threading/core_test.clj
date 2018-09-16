@@ -134,6 +134,9 @@
 (deftest test-let->
   (is (= 3/2 (-> 1 (let->  [a (/ 2)] (+ a)))))
   (is (= 3   (-> 1 (let->> [a (/ 2)] (+ a)))))
+  (is (= 6 (let-> 1 [a inc
+                     b (* a 2)]
+             (+ (inc b)))))
   (let [x (atom 0)]
     (is (= 4 (-> 1 (let-> [_ (<- (swap! x inc))
                            _ (<- (swap! x inc))]
@@ -144,6 +147,9 @@
 (deftest test-binding->
   (is (= 3/2 (-> 1 (binding->  [*a* (/ 2)] (+ *a*)))))
   (is (= 3   (-> 1 (binding->> [*a* (/ 2)] (+ *a*)))))
+  (is (= 5 (let->> 1 [a inc
+                      b (* a 2)]
+             (/ (inc b)))))
   (let [x (atom 0)]
     (is (= 4 (-> 1 (binding-> [*a* (<- (swap! x inc))
                                *a* (<- (swap! x inc))]
