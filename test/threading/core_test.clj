@@ -138,10 +138,11 @@
                      b (* a 2)]
              (+ (inc b)))))
   (let [x (atom 0)]
-    (is (= 4 (-> 1 (let-> [_ (<- (swap! x inc))
+    (is (= 3 (-> 1 (let-> [_ (<- (swap! x inc))
                            _ (<- (swap! x inc))]
-                          (<- (swap! x inc))
-                          (<- (swap! x inc))))))))
+                     inc
+                     inc))))
+    (is (= 2 @x))))
 
 (def ^:dynamic *a*)
 (deftest test-binding->

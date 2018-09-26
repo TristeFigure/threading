@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.3.3] - 2018-09-16
+### Fixed:
+- `let->` now properly threads the expression to the body expressions.
+
 ## [0.3.2] - 2018-09-16
 ### Fixed:
 - updated shuriken to version `0.14.16` in to order to fix order of

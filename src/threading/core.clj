@@ -413,7 +413,7 @@
                   (>>- (map-vals-> adapt))
                   (apply concat)
                   vec)
-         ~@(map adapt body)))))
+         (~&threading-variant ~input-sym ~@body)))))
 
 (defthreading binding
   "Threads `expr` through each bound expression then through each form in
