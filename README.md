@@ -39,7 +39,7 @@ A Clojure library that provides the kind of arrows you need on an impulse as wel
 ## Usage
 
 ```clojure
-[threading "0.3.3"]
+[threading "0.3.4"]
 ```
 
 ```clojure
@@ -57,7 +57,7 @@ I came up with this library to circumvent limitations of some arrows from `cloju
 Let's observe how `clojure.core/cond->` works:
 ```clojure
 (cond-> THREADED-EXPR
-  true THREADING-SLOT       
+  true THREADING-SLOT
   false THREADING-SLOT)
 ```
 The problem I want to point is the fact conditions in this threading arrow cannot receive the threaded expression. Similarly, the cases matching each condition must receive the threaded expression and we don't have control over this either.
@@ -155,7 +155,7 @@ Consider:
 `tap->` gets is inspiration from Ruby's [`tap`](https://apidock.com/ruby/Object/tap)
 
 > **`tap()`** public
-> 
+>
 > Yields x to the block, and then returns x. The primary purpose of this
 > method is to “tap into” a method chain, in order to perform operations on
 > intermediate results within the chain.
@@ -195,7 +195,7 @@ Consider:
 ### Debugging
 
 `pp->` and `pp->>` will execute each form, threading them together, and will display at each step a debug line, then return the value from the last expr.
- 
+
 ```clojure
 (pp->> {:a 1 :b 2}
        (merge {:c 3})

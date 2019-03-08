@@ -120,7 +120,7 @@
                           :bodies     bodies}
                          (remove (fn [[k v]] (nil? v)))
                          (into {})
-                         (s/unform :shuriken.spec/defmacro-form)))))))
+                         (s/unform :shuriken.spec/defn-form)))))))
 
 (defthreading
   "A threading fletching used to change the position at which the threaded

@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## [0.3.4] - 2018-03-08
+### Changed
+- upgraded `shuriken` to version `0.14.36`.
+
 ## [0.3.3] - 2018-09-16
 ### Fixed:
 - `let->` now properly threads the expression to the body expressions.
@@ -29,7 +33,7 @@ All notable changes to this project will be documented in this file. This change
 
 
 ## [0.1.10] - 2018-09-05
-### Added 
+### Added
 - `mapv->`, `juxt->`, `let->`.
 
 ## [0.1.9] - 2018-09-04
